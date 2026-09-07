@@ -1,3 +1,16 @@
 {
-  "platforms"
+  "platforms": [
+    {
+      "name": "Reddit",
+      "url_template": "https://reddit.com",
+      "success_selector": "h1",
+      "failed_text": "page not found"
+    },
+    {
+      "name": "Instagram",
+      "url_template": "https://instagram.com",
+      "success_selector": "meta[propert='og:type'][content='profile']",
+      "failed_text": "page not found"
+    }
+  ]
 }
