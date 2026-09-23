@@ -20,7 +20,7 @@ func InitEngine(headless bool) (*Engine, error) {
 		return nil, fmt.Errorf("could not launch playwright: %v", err)
 	}
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(headless),
+		Headless: new(headless),
 		Args: []string{
 			"--disable-blink-features=AutomationControlled",
 			"--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",

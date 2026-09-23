@@ -27,7 +27,7 @@ func NewProxyRotator(filepath string) (*ProxyRotator, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line == "" && !strings.HasPrefix(line, "#") {
+		if line != "" && !strings.HasPrefix(line, "#") {
 			proxies = append(proxies, line)
 		}
 	}

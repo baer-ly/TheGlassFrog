@@ -1,0 +1,34 @@
+{
+  "platforms": [
+    {
+      "name": "GitHub",
+      "url_template": "https://github.com/%s",
+      "success_selector": ".vcard-names",
+      "failed_text": "Not Found"
+    },
+    {
+      "name": "Reddit",
+      "url_template": "https://reddit.com/%s/",
+      "success_selector": "h1",
+      "failed_text": "page not found"
+    },
+    {
+      "name": "Instagram",
+      "url_template": "https://instagram.com/%s/",
+      "success_selector": "meta[property='og:type'][content='profile']",
+      "failed_text": "Page Not Found"
+    },
+    {
+      "name": "Steam",
+      "url_template": "https://steamcommunity.com/id/%s/",
+      "success_selector": ".profile_header_bg",
+      "failed_text": "The specified profile could not be found"
+    },
+    {
+      "name": "Telegram",
+      "url_template": "https://t.me/%s/",
+      "success_selector": ".tgme_page_extra",
+      "failed_text": "If you have Telegram, you can contact"
+    }
+  ]
+}

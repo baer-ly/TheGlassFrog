@@ -8,8 +8,8 @@ import (
 type Platform struct {
 	Name            string `json:"name"`
 	URLTemplate     string `json:"url_template"`
-	SuccessSelector string `json:"successSelector"`
-	FailedSelector  string `json:"failedSelector"`
+	SuccessSelector string `json:"success_selector"`
+	FailedText      string `json:"failed_text"`
 }
 
 type Config struct {
