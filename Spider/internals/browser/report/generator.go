@@ -1,8 +1,13 @@
 package report
 
 import (
+	"encoding/base64"
+	"fmt"
 	"html/template"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type TargetMatch struct {
@@ -13,6 +18,24 @@ type TargetMatch struct {
 type ReportPayload struct {
 	Username string
 	Matches  []TargetMatch
+}
+
+var templateFuncs = template.FuncMap{
+	"embedImage": embedImage,
+	"baseName":   filepath.Base,
+}
+
+func embedImage(path string) template.URL {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	mimeType := http.DetectContentType(data)
+	if !strings.HasPrefix(mimeType, "image/") {
+		return ""
+	}
+	encoded := base64.StdEncoding.EncodeToString(data)
+	return template.URL(fmt.Sprintf("data:%s;base64,%s", mimeType, encoded))
 }
 
 const htmlTemplate = `<!DOCTYPE html>
@@ -26,8 +49,10 @@ const htmlTemplate = `<!DOCTYPE html>
         .card { background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #334155; }
         .title { font-size: 20px; color: #f43f5e; margin: 0 0 10px 0; }
         .url { color: #38bdf8; text-decoration: none; }
-        ul { margin-top: 10px; padding-left: 20px; }
-        li { font-family: monospace; color: #94a3b8; margin-bottom: 4px; }
+        .gallery { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+        .thumb { width: 140px; margin: 0; }
+        .thumb img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #334155; display: block; }
+        .thumb figcaption { font-family: monospace; color: #94a3b8; font-size: 12px; margin-top: 4px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -39,11 +64,16 @@ const htmlTemplate = `<!DOCTYPE html>
         <p>Location URL: <a class="url" href="{{.ProfileURL}}" target="_blank">{{.ProfileURL}}</a></p>
         <p><strong>Harvested Media Source Artifacts:</strong></p>
         {{if .Downloaded}}
-        <ul>
+        <div class="gallery">
             {{range .Downloaded}}
-            <li>Isolated Storage File -> {{.}}</li>
+            <figure class="thumb">
+                <a href="{{embedImage .}}" target="_blank">
+                    <img src="{{embedImage .}}" alt="{{baseName .}}" loading="lazy">
+                </a>
+                <figcaption>{{baseName .}}</figcaption>
+            </figure>
             {{end}}
-        </ul>
+        </div>
         {{else}}
         <p style="color: #64748b; font-style: italic;">No static visual image file handles preserved from destination host framework DOM.</p>
         {{end}}
@@ -53,7 +83,7 @@ const htmlTemplate = `<!DOCTYPE html>
 </html>`
 
 func ExportHTMLReport(outputPath string, payload ReportPayload) error {
-	tmpl, err := template.New("ReportPayload").Parse(htmlTemplate)
+	tmpl, err := template.New("ReportPayload").Funcs(templateFuncs).Parse(htmlTemplate)
 	if err != nil {
 		return err
 	}

@@ -67,11 +67,9 @@ func ScoutWorker(
 				return err
 			}
 
-
 			if strings.Contains(page.URL(), "/accounts/login/") || strings.Contains(page.URL(), "/login") {
 				return fmt.Errorf("redirected to login wall deflection")
 			}
-
 
 			content, err := page.Content()
 			if err != nil {
@@ -81,9 +79,9 @@ func ScoutWorker(
 				return fmt.Errorf("user not found signature")
 			}
 
-
 			_, _ = page.Screenshot(playwright.PageScreenshotOptions{
-				Path:     new("Spider/storage/evidence/front_page_view.png"),
+				Path: new("Spider/storage/evidence/front_page_view.png"),
+				//Quality:  new(1080),
 				FullPage: new(true),
 			})
 

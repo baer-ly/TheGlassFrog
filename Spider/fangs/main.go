@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	if *usernameFlag == "" {
-		fmt.Println("Usage: go run cmd/osint/main.go -u <username> [-p <platforms>] [-w <workers>]")
+		fmt.Println("Usage: go run .\\Spider\\fangs\\main.go -u <username> [-p <platforms>] [-w <workers>]")
 		os.Exit(1)
 	}
 

@@ -8,7 +8,7 @@
     },
     {
       "name": "Reddit",
-      "url_template": "https://reddit.com/%s/",
+      "url_template": "https://reddit.com/u/%s/",
       "success_selector": "h1",
       "failed_text": "page not found"
     },
