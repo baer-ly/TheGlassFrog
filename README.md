@@ -176,5 +176,6 @@ of the APIs used here (Google Cloud Vision, breach-lookup services)
 also have their own acceptable-use terms that restrict identifying or
 tracking private individuals without consent.
 
-## License
 
+
+WTC-VV24KUZ4
