@@ -1,16 +1,180 @@
-# TheGlassFrog
-A basic HTML Parser script, or web scraper.
----
----
-The purpose of this project is to learn a new language while implementing past knowledge. It is also to better understand
-how data is collected.
----
+## TheGlassFrog
 
-This project is to help automate the collection of Open Source Intelligence `OSINT`, to get all the news and job listings,
- etc.
+A concurrent, Go-based username reconnaissance tool. Given a username,
+Spider checks its presence across multiple platforms in parallel using
+headless-browser automation, downloads any profile images it finds on
+confirmed matches, and generates a single HTML audit report.
 
+## Features
 
+- **Concurrent platform checks** — a worker pool (`ScoutWorker`) checks
+  every configured platform in parallel via Playwright-driven headless
+  Chromium, rather than sequentially.
+- **Proxy rotation** — optionally rotates outbound requests through a
+  list of proxies (`proxies.txt`) to avoid hammering one IP.
+- **Configurable platform list** — platforms, URL patterns, and match
+  signatures live in `web/profiles.json`, not hardcoded.
+- **Evidence capture** — on a confirmed match, a second worker pool
+  downloads any images found on the profile page and takes a debug
+  screenshot.
+- **HTML report generation** — all confirmed matches and downloaded
+  images are rendered into a single self-contained `report.html`.
+- **Optional authenticated scraping** — `login_auth.go` is a standalone
+  utility that opens a real browser window for manual login, then
+  saves the resulting session cookies to `cookies.json` so the main
+  scraper can reuse an authenticated session where needed.
 
+### Experimental / not yet wired into the CLI
 
+These exist as standalone packages but aren't hooked up to `-u`/`-p`
+flags yet — treat them as a starting point, not a finished feature:
 
+- **`internals/imagesearch`** — reverse image search via the Google
+  Cloud Vision Web Detection API, for cross-referencing downloaded
+  profile photos against other pages they appear on. Requires your
+  own GCP API key.
+- **`internals/emailintel`** — checks an email against Gravatar (free),
+  XposedOrNot (free, no key), and optionally Have I Been Pwned (paid
+  API key) for breach exposure.
+
+## Architecture
+
+```
+username --> Job{platform, username} --> jobs channel
+                                              |
+                                    [ScoutWorker pool]
+                              (headless browser, per-platform check)
+                                              |
+                                    confirmed match?
+                                              |
+                                       matches channel
+                                              |
+                                  [forensic worker pool]
+                            (revisit page, download images)
+                                              |
+                                    finalReportMatches
+                                              |
+                                    ExportHTMLReport()
+                                              |
+                                        report.html
+```
+
+## Prerequisites
+
+- Go 1.22+ (uses `math/rand/v2` and `sync.WaitGroup.Go`)
+- [Playwright for Go](https://github.com/mxschmitt/playwright-go) and
+  its browser binaries:
+  ```
+  go run github.com/playwright-community/playwright-go/cmd/playwright install --with-deps
+  ```
+
+## Installation
+
+```
+git clone <your-repo-url>
+cd Spider
+go mod tidy
+```
+
+> Adjust the module path in imports (`TheGlassFrog/Spider/...`) to
+> match your actual `go.mod` module name if you rename the repo.
+
+## Usage
+
+```
+go run .\Spider\fangs\main.go -u <username> [-p <platforms>] [-w <workers>]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-u` | Target username to check (required) | — |
+| `-p` | Comma-separated platform filter, e.g. `github,steam` | all configured platforms |
+| `-w` | Number of concurrent scout workers | `3` |
+
+**Example:**
+```
+go run cmd/osint/main.go -u octocat -p github,reddit -w 2
+```
+
+Output is written to `report.html` in the working directory, and
+evidence (screenshots, downloaded images) under `storage/evidence/`.
+
+## Configuration
+
+### `web/profiles.json`
+
+Each entry defines one platform:
+
+```json
+{
+  "name": "GitHub",
+  "url_template": "https://github.com/%s",
+  "success_selector": ".vcard-names",
+  "failed_text": "Not Found"
+}
+```
+
+- `url_template` **must** contain a `%s` placeholder for the username.
+- `success_selector` is a CSS selector that only appears on a valid
+  profile page.
+- `failed_text` is a case-insensitive string that indicates a "not
+  found" page.
+
+Selectors and failed-text strings can drift as platforms update their
+frontends — if a platform starts reporting false negatives, that's the
+first place to check.
+
+### `proxies.txt`
+
+One proxy per line (`host:port`, or a scheme-prefixed URL if your
+proxy provider requires it). Blank lines and lines starting with `#`
+are ignored. If the file is missing, Spider runs without proxies.
+
+### `cookies.json`
+
+Optional. Generated by running `login_auth.go` separately and logging
+in manually when prompted. If present, the saved session cookies are
+attached to every new browser context, which helps with platforms that
+show different content to logged-in vs. anonymous visitors.
+
+## Project structure
+
+```
+internals/
+  browser/          Engine setup, isolated browser contexts, proxy rotation
+    report/          HTML report generation, live terminal logging
+  scraper/           Per-platform checking (ScoutWorker), image extraction
+  emailintel/        (experimental) email → breach/account signal checks
+  imagesearch/       (experimental) reverse image search via Vision API
+  metadata/          exif.go — currently a stub package
+web/
+  config.go          Platform config loader
+  profiles.json       Platform definitions
+cmd/
+  osint/main.go      Main CLI entry point
+  login-auth/main.go  Standalone manual-login / cookie-capture utility
+```
+
+## Known limitations
+
+- `success_selector`/`failed_text` values depend on each platform's
+  current markup and will need periodic upkeep.
+- Instagram and Telegram don't offer a public API that fits this use
+  case, so they rely on browser scraping rather than a stable API —
+  the least reliable part of the pipeline.
+- The email and reverse-image-search modules are standalone packages,
+  not yet integrated into the main CLI flow.
+
+## Responsible use
+
+This tool is built for auditing your own online footprint, authorized
+security research, and learning concurrent systems design — the same
+spirit as tools like Sherlock or Holehe. Before pointing it at an
+account that isn't yours, make sure you have the right to do so under
+the relevant platform's terms of service and your local law; several
+of the APIs used here (Google Cloud Vision, breach-lookup services)
+also have their own acceptable-use terms that restrict identifying or
+tracking private individuals without consent.
+
+## License
 
